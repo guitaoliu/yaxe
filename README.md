@@ -40,7 +40,11 @@ python包依赖
 
 ### 运行
 
-运行`spider/spider.py`后
+打开`spider/spider.py`
+
+在开头处填写`NetID`和密码（请放心该项目没有记录任何信息
+
+运行文件
 
 在运行目录下生成`Grade.xls`成绩表格
 
