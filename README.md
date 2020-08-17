@@ -38,6 +38,10 @@ python包依赖
 - selenium（请确保能够正常运行，包括配置webdriver等
 - xlwt
 
+### Selenium教程
+
+具体教程请移步我的博客[饭饭的Selenium+xlwt笔记](https://asterisk.plus/archives/188)
+
 ### 运行
 
 打开`spider/spider.py`
