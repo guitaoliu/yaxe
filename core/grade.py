@@ -3,7 +3,7 @@ import json
 from typing import List
 
 from auth.ehall_login import ehall_login
-
+from utils import get_timestamp
 
 session = ehall_login()
 
@@ -19,7 +19,25 @@ def get_grade(num=999) -> List[dict]:
     """
     session.get('http://ehall.xjtu.edu.cn/new/index.html?browser=no')
     session.get(
-        'http://ehall.xjtu.edu.cn/jwapp/sys/cjcx/*default/index.do?amp_sec_version_=1&gid_=WFBMalgxbHBiTm9sWERQZFArSWI1ZXlwOTNQd1VRQllTbHdzRG1JNnlqQ0pzSFJ2V09LdGhraXB3emNHSUxyQ3MrMFZycXdtZ00zUFBZc2xRMlNFOGc9PQ&EMAP_LANG=zh&THEME=indigo')
+        'http://ehall.xjtu.edu.cn/portal/html/select_role.html',
+        params={
+            'appId': 4768574631264620,
+        },
+    )
+    resp = session.get(
+        'http://ehall.xjtu.edu.cn/appMultiGroupEntranceList',
+        params={
+            'r_t': get_timestamp(),
+            'appId': 4768574631264620,
+            'param': ''
+        },
+    )
+    data = resp.json()
+    target_url = ''
+    for group in data['data']['groupList']:
+        if group['groupName'] == '移动应用学生':
+            target_url = group['targetUrl']
+    session.get(target_url)
     resp = session.post(
         'http://ehall.xjtu.edu.cn/jwapp/sys/cjcx/modules/cjcx/xscjcx.do',
         data={
@@ -33,7 +51,7 @@ def get_grade(num=999) -> List[dict]:
             'pageNumber': 1,
         }
     )
-    grade = json.loads(resp.text)['datas']['xscjcx']['rows']
+    grade = resp.json()['datas']['xscjcx']['rows']
     return grade
 
 
