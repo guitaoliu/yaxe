@@ -1,8 +1,7 @@
-import sys
-import json
 import csv
 from abc import abstractmethod
-from typing import List
+from typing import List, Dict
+from functools import reduce
 
 from auth.ehall_login import ehall_login
 from utils import get_timestamp
@@ -15,9 +14,9 @@ class GradeParser:
     NUM = 999
 
     def __init__(self) -> None:
-        self.grade = self.get_grade()
-        self.grade_json = self.parse_grade()
-        self.total_subject = len(self.grade_json)
+        self.origin_data = self.get_grade()
+        self.grade = self.parse_grade()
+        self.total_subject = len(self.grade)
 
     def get_grade(self) -> List[dict]:
         """获得学生对应的所有学科成绩分析数据
@@ -103,7 +102,7 @@ class GradeParser:
 
     def parse_grade(self, grade=None) -> List[dict]:
         if grade is None:
-            grade = self.grade
+            grade = self.origin_data
         grades = [{
             '课序号': {
                 'display': subject['KXH'],
@@ -179,18 +178,87 @@ class GradeParser:
                 'id': subject['TSYYDM'],
                 'display': subject['TSYYDM_DISPLAY']
             },
-        } for subject in self.grade]
+        } for subject in grade]
 
         return grades
 
     def save_csv(self, dst='result/grade.csv'):
-        fieldnames = list(self.grade_json[0].keys())
+        fieldnames = list(self.grade[0].keys())
         with open(dst, 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames)
             writer.writeheader()
-            for grade in self.grade_json:
+            for grade in self.grade:
                 writer.writerow({key: val['display']
                                  for key, val in grade.items()})
 
-    def gpa_calculator(self):
-        pass
+
+class GPACalculator:
+
+    point_convert_table = {
+        'basic_4_0': {
+            'grade': (90, 80, 70, 60, 0),
+            'credit': (4.0, 3.0, 2.0, 1.0, 0.0),
+        },
+        'improved_4_0_version1': {
+            'grade': (85, 70, 60, 0),
+            'credit': (4.0, 3.0, 2.0, 0.0),
+        },
+        'improved_4_0_version2': {
+            'grade': (85, 75, 60, 0),
+            'credit': (4.0, 3.0, 2.0, 0.0),
+        },
+        'pku': {
+            'grade': (90, 85, 82, 78, 75, 72, 68, 64, 60, 0),
+            'credit': (4.0, 3.7, 3.3, 3.0, 2.7, 2.3, 2.0, 1.5, 1.0, 0.0),
+        },
+        'ustc': {
+            'grade': (95, 90, 85, 82, 78, 75, 72, 68, 65, 64, 61, 60, 0),
+            'credit': (4.3, 4.0, 3.7, 3.3, 3.0, 2.7, 2.3, 2.0, 1.7, 1.5, 1.3, 1.0, 0.0),
+        },
+        'sjtu': {
+            'grade': (95, 90, 85, 75, 70, 67, 65, 62, 60, 0),
+            'credit': (4.3, 4.0, 3.7, 3.3, 3.0, 2.7, 2.3, 2.0, 1.7, 1.0, 0.0),
+        }
+    }
+
+    def __init__(self, data_file='result/grade.csv') -> None:
+        with open(data_file, newline='') as f:
+            reader = csv.DictReader(f)
+            credit, grade, point = [], [], []
+            for row in reader:
+                credit.append(float(row['学分']))
+                grade.append(float(row['总成绩']))
+                point.append(float(row['绩点']))
+            self.grades = {
+                'credit': credit,
+                'grade': grade,
+                'point': point,
+            }
+        self.total_credit = reduce(lambda x, y: x + y, self.grades['credit'])
+        self.xjtu_gpa = self.get_average(self.grades['point'])
+
+    def get_average(self, points: List[float]):
+        total_points = reduce(
+            lambda x, y: x+y,
+            [x * y for x, y in zip(points, self.grades['credit'])]
+        )
+        return round(total_points / self.total_credit, 2)
+
+    def calculate(self):
+        def get_credit(g, c_table) -> float:
+            for grade, credit in zip(c_table['grade'], c_table['credit']):
+                if g >= grade:
+                    return credit
+            return 0
+        result = {}
+        for method, c_table in self.point_convert_table.items():
+            points = [get_credit(g, c_table) for g in self.grades['grade']]
+            result[method] = self.get_average(points)
+
+        return result
+
+    def get_gpa(self) -> Dict[str, int]:
+        return {
+            **self.calculate(),
+            'xjtu': self.xjtu_gpa,
+        }
