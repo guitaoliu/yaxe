@@ -14,6 +14,29 @@ class GradeParser:
     NUM = 999
 
     def __init__(self) -> None:
+        self.session = session
+        self.session.get('http://ehall.xjtu.edu.cn/new/index.html?browser=no')
+        self.session.get(
+            'http://ehall.xjtu.edu.cn/portal/html/select_role.html',
+            params={
+                'appId': 4768574631264620,
+            },
+        )
+        resp = self.session.get(
+            'http://ehall.xjtu.edu.cn/appMultiGroupEntranceList',
+            params={
+                'r_t': get_timestamp(),
+                'appId': 4768574631264620,
+                'param': ''
+            },
+        )
+        data = resp.json()
+        target_url = ''
+        for group in data['data']['groupList']:
+            if group['groupName'] == '移动应用学生':
+                target_url = group['targetUrl']
+        self.session.get(target_url)
+
         self.origin_data = self.get_grade()
         self.grade = self.parse_grade()
         self.total_subject = len(self.grade)
@@ -27,28 +50,8 @@ class GradeParser:
         Returns:
             dict: 原始学科成绩数据格式
         """
-        session.get('http://ehall.xjtu.edu.cn/new/index.html?browser=no')
-        session.get(
-            'http://ehall.xjtu.edu.cn/portal/html/select_role.html',
-            params={
-                'appId': 4768574631264620,
-            },
-        )
-        resp = session.get(
-            'http://ehall.xjtu.edu.cn/appMultiGroupEntranceList',
-            params={
-                'r_t': get_timestamp(),
-                'appId': 4768574631264620,
-                'param': ''
-            },
-        )
-        data = resp.json()
-        target_url = ''
-        for group in data['data']['groupList']:
-            if group['groupName'] == '移动应用学生':
-                target_url = group['targetUrl']
-        session.get(target_url)
-        resp = session.post(
+
+        resp = self.session.post(
             'http://ehall.xjtu.edu.cn/jwapp/sys/cjcx/modules/cjcx/xscjcx.do',
             data={
                 'querySetting': [
@@ -63,7 +66,7 @@ class GradeParser:
         return grade
 
     @abstractmethod
-    def get_subject_rank(subject: dict):
+    def get_subject_rank(self, subject: dict):
         """这里是成绩分析页面点开单科成绩后的请求，还未做处理，可以进一步分析数据
 
         Args:
@@ -71,7 +74,7 @@ class GradeParser:
         """
         # 成绩分布
         class_distribution_anl = 'http://ehall.xjtu.edu.cn/jwapp/sys/cjcx/modules/cjcx/jxbcjfbcx.do'
-        req = session.get(
+        resp = self.session.get(
             class_distribution_anl,
             data={
                 subject['JXBID'],  # 教学班 ID
@@ -80,7 +83,7 @@ class GradeParser:
             })
         # 成绩统计
         class_grade_anl = 'http://ehall.xjtu.edu.cn/jwapp/sys/cjcx/modules/cjcx/jxbcjtjcx.do'
-        req = session.get(
+        resp = self.session.get(
             class_grade_anl,
             data={
                 subject['JXBID'],  # 教学班 ID
@@ -89,7 +92,7 @@ class GradeParser:
             })
         # 学生排名
         stu_rank = 'http://ehall.xjtu.edu.cn/jwapp/sys/cjcx/modules/cjcx/jxbxspmcx.do'
-        req = session.get(
+        resp = self.session.get(
             stu_rank,
             data={
                 subject['JXBID'],  # 教学班 ID

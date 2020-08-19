@@ -10,7 +10,7 @@ def cli():
 
 
 @click.command(help='fetch grades')
-@click.option('--update', default=False, help='force update the grade file')
+@click.option('--update', default=False, is_flag=True, help='force update the grade file')
 @click.option('--output', default='result/grade.csv', help='grade file output dir')
 def fetch_grade(update, output):
     output_file = Path(output)
@@ -24,6 +24,8 @@ def fetch_grade(update, output):
     if update or not output_file.exists():
         grade = GradeParser()
         grade.save_csv(output_file)
+        print(f'Fetching...')
+        print(f'Done...')
 
 
 @click.command(help='calculate your gpa using the grade file')
