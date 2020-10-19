@@ -1,7 +1,12 @@
-import click
 from pathlib import Path
-from colorama import Fore, Style
-from core.grade import GPACalculator, GradeParser
+
+import click
+from rich.console import Console
+from rich.table import Table
+
+from core.grade import GradeParser, GPACalculator
+
+console = Console()
 
 
 @click.group()
@@ -18,14 +23,14 @@ def fetch_grade(update, output):
         output_file.parent.mkdir()
 
     if output_file.exists() and not update:
-        print(
-            f'{Fore.RED}Grade file already exist, setting update to true to update the file!')
+        console.print(
+            '[red]Grade file already exist, setting update to true to update the file!')
 
     if update or not output_file.exists():
         grade = GradeParser()
         grade.save_csv(output_file)
-        print(f'Fetching...')
-        print(f'Done...')
+        print('Fetching...')
+        print('Done...')
 
 
 @click.command(help='calculate your gpa using the grade file')
@@ -33,14 +38,18 @@ def fetch_grade(update, output):
 def get_gpa(data_file):
     data_file = Path(data_file)
     if data_file.exists():
-        gpa = GPACalculator(data_file)
-        print(f'{Fore.BLUE}METHOD', '\t', f'{Fore.WHITE}GPA')
-        print('-'*14)
-        for method, gpa in gpa.get_gpa().items():
-            print(f'{Fore.BLUE}{method}:', end=' ')
-            print(f'{Fore.WHITE}{gpa}')
+        res = GPACalculator(data_file)
+        table = Table(title='GAP result')
+        table.add_column('Method', style='cyan')
+        table.add_column('Result')
+
+        for method, gpa in res.get_gpa().items():
+            table.add_row(
+                method, str(round(gpa, 2))
+            )
+        console.print(table)
     else:
-        print(f'{Fore.RED}Please run grade fetch first!')
+        print('[red]Please run grade fetch first!')
 
 
 cli.add_command(fetch_grade)
