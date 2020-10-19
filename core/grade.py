@@ -135,7 +135,6 @@ class GradeParser:
             '学时': {
                 'display': subject['XS'],
             },
-
             '课程类别': {
                 'id': subject['KCLBDM'],
                 'display': subject['KCLBDM_DISPLAY'],
@@ -152,7 +151,6 @@ class GradeParser:
                 'id': subject['SFZX'],
                 'display': subject['SFZX_DISPLAY'],
             },
-
             '重修重考': {
                 'id': subject['CXCKDM'],
                 'display': subject['CXCKDM_DISPLAY'],
@@ -239,6 +237,7 @@ class GPACalculator:
             }
         self.total_credit = reduce(lambda x, y: x + y, self.grades['credit'])
         self.xjtu_gpa = self.get_average(self.grades['point'])
+        self.average = self.get_average(self.grades['grade'])
 
     def get_average(self, points: List[float]):
         total_points = reduce(
@@ -262,6 +261,7 @@ class GPACalculator:
 
     def get_gpa(self) -> Dict[str, int]:
         return {
+            'average': self.average,
             **self.calculate(),
             'xjtu': self.xjtu_gpa,
         }
