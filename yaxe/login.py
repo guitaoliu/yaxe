@@ -66,7 +66,10 @@ def ehall_login() -> requests.Session:
 
     resp = session.get(
         "https://org.xjtu.edu.cn/openplatform/g/admin/getUserIdentity",
-        params={"memberId": data["data"]["orgInfo"]["memberId"], "_": get_timestamp()},
+        params={
+            "memberId": data["data"]["orgInfo"]["memberId"],
+            "_": get_timestamp(),
+        },
     )
     data = resp.json()
 

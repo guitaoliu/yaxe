@@ -24,7 +24,11 @@ class GradeParser:
         )
         resp = self.session.get(
             "http://ehall.xjtu.edu.cn/appMultiGroupEntranceList",
-            params={"r_t": get_timestamp(), "appId": 4768574631264620, "param": ""},
+            params={
+                "r_t": get_timestamp(),
+                "appId": 4768574631264620,
+                "param": "",
+            },
         )
         data = resp.json()
         target_url = ""
@@ -100,7 +104,9 @@ class GradeParser:
             },
         )
         # 学生排名
-        stu_rank = "http://ehall.xjtu.edu.cn/jwapp/sys/cjcx/modules/cjcx/jxbxspmcx.do"
+        stu_rank = (
+            "http://ehall.xjtu.edu.cn/jwapp/sys/cjcx/modules/cjcx/jxbxspmcx.do"
+        )
         resp = self.session.get(
             stu_rank,
             data={
@@ -125,25 +131,55 @@ class GradeParser:
                 "总成绩": {"display": subject["ZCJ"]},
                 "绩点": {"display": subject["XFJD"]},
                 "考试日期": {"display": subject["KSSJ"]},
-                "学期学年": {"display": subject["XNXQDM_DISPLAY"], "id": subject["XNXQDM"]},
+                "学期学年": {
+                    "display": subject["XNXQDM_DISPLAY"],
+                    "id": subject["XNXQDM"],
+                },
                 "学时": {"display": subject["XS"]},
-                "课程类别": {"id": subject["KCLBDM"], "display": subject["KCLBDM_DISPLAY"]},
+                "课程类别": {
+                    "id": subject["KCLBDM"],
+                    "display": subject["KCLBDM_DISPLAY"],
+                },
                 "课程性质": {
                     "id": subject["DJCJLXDM"],
                     "display": subject["DJCJLXDM_DISPLAY"],
                 },
-                "修读方式": {"id": subject["XDFSDM"], "display": subject["XDFSDM_DISPLAY"]},
-                "修读类型": {"id": subject["SFZX"], "display": subject["SFZX_DISPLAY"]},
-                "重修重考": {"id": subject["CXCKDM"], "display": subject["CXCKDM_DISPLAY"]},
+                "修读方式": {
+                    "id": subject["XDFSDM"],
+                    "display": subject["XDFSDM_DISPLAY"],
+                },
+                "修读类型": {
+                    "id": subject["SFZX"],
+                    "display": subject["SFZX_DISPLAY"],
+                },
+                "重修重考": {
+                    "id": subject["CXCKDM"],
+                    "display": subject["CXCKDM_DISPLAY"],
+                },
                 "等级成绩类型": {
                     "id": subject["DJCJLXDM"],
                     "display": subject["DJCJLXDM_DISPLAY"],
                 },
-                "考试类型": {"id": subject["KSLXDM"], "display": subject["KSLXDM_DISPLAY"]},
-                "开课单位": {"id": subject["KKDWDM"], "display": subject["KKDWDM_DISPLAY"]},
-                "是否及格": {"id": subject["SFJG"], "display": subject["SFJG_DISPLAY"]},
-                "是否有效": {"id": subject["SFYX"], "display": subject["SFYX_DISPLAY"]},
-                "特殊原因": {"id": subject["TSYYDM"], "display": subject["TSYYDM_DISPLAY"]},
+                "考试类型": {
+                    "id": subject["KSLXDM"],
+                    "display": subject["KSLXDM_DISPLAY"],
+                },
+                "开课单位": {
+                    "id": subject["KKDWDM"],
+                    "display": subject["KKDWDM_DISPLAY"],
+                },
+                "是否及格": {
+                    "id": subject["SFJG"],
+                    "display": subject["SFJG_DISPLAY"],
+                },
+                "是否有效": {
+                    "id": subject["SFYX"],
+                    "display": subject["SFYX_DISPLAY"],
+                },
+                "特殊原因": {
+                    "id": subject["TSYYDM"],
+                    "display": subject["TSYYDM_DISPLAY"],
+                },
             }
             for subject in grade
         ]
@@ -156,7 +192,9 @@ class GradeParser:
             writer = csv.DictWriter(f, fieldnames)
             writer.writeheader()
             for grade in self.grade:
-                writer.writerow({key: val["display"] for key, val in grade.items()})
+                writer.writerow(
+                    {key: val["display"] for key, val in grade.items()}
+                )
 
 
 class GPACalculator:
@@ -180,7 +218,21 @@ class GPACalculator:
         },
         "ustc": {
             "grade": (95, 90, 85, 82, 78, 75, 72, 68, 65, 64, 61, 60, 0),
-            "credit": (4.3, 4.0, 3.7, 3.3, 3.0, 2.7, 2.3, 2.0, 1.7, 1.5, 1.3, 1.0, 0.0),
+            "credit": (
+                4.3,
+                4.0,
+                3.7,
+                3.3,
+                3.0,
+                2.7,
+                2.3,
+                2.0,
+                1.7,
+                1.5,
+                1.3,
+                1.0,
+                0.0,
+            ),
         },
         "sjtu": {
             "grade": (95, 90, 85, 75, 70, 67, 65, 62, 60, 0),
@@ -203,7 +255,8 @@ class GPACalculator:
 
     def get_average(self, points: List[float]):
         total_points = reduce(
-            lambda x, y: x + y, [x * y for x, y in zip(points, self.grades["credit"])]
+            lambda x, y: x + y,
+            [x * y for x, y in zip(points, self.grades["credit"])],
         )
         return round(total_points / self.total_credit, 2)
 
@@ -222,4 +275,8 @@ class GPACalculator:
         return result
 
     def get_gpa(self) -> Dict[str, int]:
-        return {"average": self.average, **self.calculate(), "xjtu": self.xjtu_gpa}
+        return {
+            "average": self.average,
+            **self.calculate(),
+            "xjtu": self.xjtu_gpa,
+        }
