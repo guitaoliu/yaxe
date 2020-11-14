@@ -1,9 +1,10 @@
 import csv
-from abc import abstractmethod
+import json
 from functools import reduce
+from pathlib import Path
 from typing import Dict, List
 
-from rich import print
+from rich.progress import track
 
 from yaxe.login import ehall_login
 from yaxe.utils import get_timestamp
@@ -37,11 +38,11 @@ class GradeParser:
                 target_url = group["targetUrl"]
         self.session.get(target_url)
 
-        self.origin_data = self.get_grade()
-        self.grade = self.parse_grade()
-        self.total_subject = len(self.grade)
+        self.origin_data = self.grade()
+        self.courses = self.parse_grade()
+        self.course_number = len(self.courses)
 
-    def get_grade(self) -> List[dict]:
+    def grade(self) -> List[dict]:
         """获得学生对应的所有学科成绩分析数据
 
         Args:
@@ -72,52 +73,79 @@ class GradeParser:
         grade = resp.json()["datas"]["xscjcx"]["rows"]
         return grade
 
-    @abstractmethod
-    def get_subject_rank(self, subject: dict):
+    def courses_analysis(self, course: str, semester: str, stu: str):
         """这里是成绩分析页面点开单科成绩后的请求，还未做处理，可以进一步分析数据
 
         Args:
             subject (dict): 查询成绩时得到的一个科目对应的字典
         """
         # 成绩分布
-        class_distribution_anl = (
+        course_distribution = (
             "http://ehall.xjtu.edu.cn/jwapp/sys/cjcx/modules/cjcx/jxbcjfbcx.do"
         )
-        resp = self.session.get(
-            class_distribution_anl,
+        resp = self.session.post(
+            course_distribution,
             data={
-                subject["JXBID"],  # 教学班 ID
-                subject["XNXQDM"],  # 学年学期代码
-                subject["TJLX"],
+                "JXBID": course,  # 教学班 ID
+                "XNXQDM": semester,  # 学年学期代码
+                "TJLX": "01",
+                "*order": "+DJDM",
             },
         )
+        data = resp.json()["datas"]["jxbcjfbcx"]["rows"]
+        course_grade_distribution = [
+            {
+                "level": item["DJDM_DISPLAY"],
+                "numbers": item["DJSL"],
+            }
+            for item in data
+        ]
+
         # 成绩统计
-        class_grade_anl = (
+        course_grade_anl = (
             "http://ehall.xjtu.edu.cn/jwapp/sys/cjcx/modules/cjcx/jxbcjtjcx.do"
         )
-        resp = self.session.get(
-            class_grade_anl,
+        resp = self.session.post(
+            course_grade_anl,
             data={
-                subject["JXBID"],  # 教学班 ID
-                subject["XNXQDM"],  # 学年学期代码
-                subject["TJLX"],
+                "JXBID": course,  # 教学班 ID
+                "XNXQDM": semester,  # 学年学期代码
+                "TJLX": "01",
             },
         )
+
+        data = resp.json()["datas"]["jxbcjtjcx"]["rows"][0]
+        course_grade_stats = {
+            "ave": data["PJF"],
+            "max": data["ZGF"],
+            "min": data["ZDF"],
+        }
+
         # 学生排名
-        stu_rank = (
-            "http://ehall.xjtu.edu.cn/jwapp/sys/cjcx/modules/cjcx/jxbxspmcx.do"
-        )
-        resp = self.session.get(
+        stu_rank = "http://ehall.xjtu.edu.cn/jwapp/sys/cjcx/modules/cjcx/jxbxspmcx.do"
+        resp = self.session.post(
             stu_rank,
             data={
-                subject["JXBID"],  # 教学班 ID
-                subject["XNXQDM"],  # 学年学期代码
-                subject["TJLX"],
-                subject["XH"],  # 学号
+                "JXBID": course,  # 教学班 ID
+                "XNXQDM": semester,  # 学年学期代码
+                "TJLX": "01",
+                "XH": stu,
             },
         )
-        print(resp)
-        # todo analyse data above
+        data = resp.json()["datas"]["jxbxspmcx"]["rows"][0]
+        course_stats = {
+            "total_numbers": data["ZRS"],
+            "grade_rank": int(data["ZRS"]) - int(data["PM"]),
+            "class_id": data["JXBID"],
+            "class": data["KCH"],
+        }
+
+        res = {
+            **course_stats,
+            **course_grade_stats,
+            "distribution": course_grade_distribution,
+        }
+        return res
 
     def parse_grade(self, grade=None) -> List[dict]:
         if grade is None:
@@ -186,15 +214,30 @@ class GradeParser:
 
         return grades
 
-    def save_csv(self, dst="result/grade.csv"):
-        fieldnames = list(self.grade[0].keys())
-        with open(dst, "w", newline="") as f:
+    def save(
+        self,
+        output="result",
+    ):
+        output_dir = Path(output)
+        fieldnames = list(self.courses[0].keys())
+        with open(output_dir.joinpath("grade.csv"), "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames)
             writer.writeheader()
-            for grade in self.grade:
-                writer.writerow(
-                    {key: val["display"] for key, val in grade.items()}
+            for grade in track(self.courses, description="Fetching grades..."):
+                writer.writerow({key: val["display"] for key, val in grade.items()})
+
+        with open(output_dir.joinpath("course.json"), "w", encoding="utf8") as f:
+            for course in track(
+                self.origin_data, description="Fetching courses data..."
+            ):
+                res = self.courses_analysis(
+                    course=course["JXBID"], semester=course["XNXQDM"], stu=course["XH"]
                 )
+                added_name = {
+                    "class_name": course["KCM"],
+                    **res,
+                }
+                f.write(json.dumps(added_name, ensure_ascii=False) + "\n")
 
 
 class GPACalculator:
