@@ -283,8 +283,8 @@ class GPACalculator:
         },
     }
 
-    def __init__(self, data_file="result/grade.csv") -> None:
-        with open(data_file, newline="") as f:
+    def __init__(self, output="result") -> None:
+        with open(Path(output).joinpath("grade.csv"), newline="") as f:
             reader = csv.DictReader(f)
             credit, grade, point = [], [], []
             for row in reader:
