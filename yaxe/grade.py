@@ -135,7 +135,7 @@ class GradeParser:
         data = resp.json()["datas"]["jxbxspmcx"]["rows"][0]
         course_stats = {
             "total_numbers": data["ZRS"],
-            "grade_rank": int(data["ZRS"]) - int(data["PM"]),
+            "grade_rank": data["PM"],
             "class_id": data["JXBID"],
             "class": data["KCH"],
         }

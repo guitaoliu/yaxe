@@ -40,16 +40,16 @@ def fetch_grade(force, print):
 
 @click.command(name="gpa", help="Calculate your gpa using the grade file.")
 @click.option(
-    "--year",
+    "--annual",
     default=False,
     is_flag=True,
-    help="Print year based average grade results.",
+    help="Calculate your annual average grade results.",
 )
-def get_gpa(year):
+def get_gpa(annual):
     data_file = Path("result")
     if data_file.exists():
         res = GPACalculator()
-        if not year:
+        if not annual:
             table = Table(title="GAP Result")
             table.add_column("Method", style="cyan")
             table.add_column("Result")
