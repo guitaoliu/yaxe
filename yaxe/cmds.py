@@ -39,17 +39,33 @@ def fetch_grade(force, print):
 
 
 @click.command(name="gpa", help="Calculate your gpa using the grade file.")
-def get_gpa():
+@click.option(
+    "--year",
+    default=False,
+    is_flag=True,
+    help="Print year based average grade results.",
+)
+def get_gpa(year):
     data_file = Path("result")
     if data_file.exists():
         res = GPACalculator()
-        table = Table(title="GAP result")
-        table.add_column("Method", style="cyan")
-        table.add_column("Result")
+        if not year:
+            table = Table(title="GAP Result")
+            table.add_column("Method", style="cyan")
+            table.add_column("Result")
 
-        for method, gpa in res.get_gpa().items():
-            table.add_row(method, str(round(gpa, 2)))
-        console.print(table)
+            for method, gpa in res.get_gpa().items():
+                table.add_row(method, str(round(gpa, 2)))
+            console.print(table)
+        else:
+            table = Table(title="Average in Each Year")
+            table.add_column("Year", style="cyan")
+            table.add_column("Average Grade")
+            table.add_column("GPA(4.3)")
+            grades, points = res.get_year_based_average_grade()
+            for year, grade in grades.items():
+                table.add_row(year, str(round(grade, 2)), str(round(points[year], 2)))
+            console.print(table)
     else:
         print("[red]Please run grade fetch first!")
 

@@ -286,12 +286,18 @@ class GPACalculator:
     def __init__(self, output="result") -> None:
         with open(Path(output).joinpath("grade.csv"), newline="") as f:
             reader = csv.DictReader(f)
-            credit, grade, point = [], [], []
+            credit, grade, point, semester = [], [], [], []
             for row in reader:
                 credit.append(float(row["学分"]))
                 grade.append(float(row["总成绩"]))
                 point.append(float(row["绩点"]))
-            self.grades = {"credit": credit, "grade": grade, "point": point}
+                semester.append(str(row["学期学年"]))
+            self.grades = {
+                "credit": credit,
+                "grade": grade,
+                "point": point,
+                "semester": semester,
+            }
         self.total_credit = reduce(lambda x, y: x + y, self.grades["credit"])
         self.xjtu_gpa = self.get_average(self.grades["point"])
         self.average = self.get_average(self.grades["grade"])
@@ -323,3 +329,25 @@ class GPACalculator:
             **self.calculate(),
             "xjtu": self.xjtu_gpa,
         }
+
+    def get_year_based_average_grade(self) -> Dict[str, float]:
+        years = [item[:11] for item in self.grades["semester"]]
+        grades_yeared = {}.fromkeys(years, 0)
+        credits = {}.fromkeys(years, 0)
+        points = {}.fromkeys(years, 0)
+        years = set(years)
+
+        for grade, point, semester, credit in zip(
+            self.grades["grade"],
+            self.grades["point"],
+            self.grades["semester"],
+            self.grades["credit"],
+        ):
+            grades_yeared[semester[:11]] += grade * credit
+            points[semester[:11]] += point * credit
+            credits[semester[:11]] += credit
+
+        for year in years:
+            grades_yeared[year] /= credits[year]
+            points[year] /= credits[year]
+        return grades_yeared, points
