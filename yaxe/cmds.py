@@ -4,7 +4,8 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from yaxe.grade import GPACalculator, GradeParser
+from .grade import GPACalculator
+from .parsers import GradeParser
 
 console = Console()
 
