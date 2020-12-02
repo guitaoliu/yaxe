@@ -14,11 +14,11 @@ pipenv install
 ## Usage
 
 ```shell
-python main.py grade
-python main.py gpa
+python -m yaxe grade
+python -m yaxe gpa
 ```
 
-This project is using [click](https://click.palletsprojects.com/en/7.x/). Check info with `python main.py --help`
+This project is using [click](https://click.palletsprojects.com/en/7.x/). Check info with `python -m yaxe --help`
 
 ```shell
 Usage: main.py [OPTIONS] COMMAND [ARGS]...

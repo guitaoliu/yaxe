@@ -5,7 +5,7 @@ from typing import List
 
 from rich.progress import track
 
-from yaxe.login import ehall_login
+from yaxe.data.login import ehall_login
 from yaxe.utils import get_timestamp
 
 session = ehall_login()

@@ -1,4 +1,4 @@
-from yaxe.cmds import cli
+from .cmds import cli
 
 if __name__ == "__main__":
     cli()

@@ -4,8 +4,8 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from .grade import GPACalculator
-from .parsers import GradeParser
+from yaxe.data.grade import GPACalculator
+from yaxe.data.parsers import GradeParser
 
 console = Console()
 
@@ -22,7 +22,7 @@ def cli():
 @click.option(
     "--print", default=False, is_flag=True, help="Print GPA result after grade updated."
 )
-def fetch_grade(force, print):
+def fetch_grade(force):
     output_file = Path("result")
     parser = GradeParser()
     if not output_file.exists():
