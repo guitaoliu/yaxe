@@ -22,7 +22,7 @@ def cli():
 @click.option(
     "--print", default=False, is_flag=True, help="Print GPA result after grade updated."
 )
-def fetch_grade(force):
+def fetch_grade(force, print):
     output_file = Path("result")
     parser = GradeParser()
     if not output_file.exists():
