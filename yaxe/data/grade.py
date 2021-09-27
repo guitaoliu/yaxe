@@ -52,8 +52,8 @@ class GPACalculator:
             reader = csv.DictReader(f)
             credit, grade, point, semester = [], [], [], []
             for row in reader:
-                if 'P' in row['等级成绩类型']:
-                    pass # remove exchange courses
+                if "P" in row["等级成绩类型"]:
+                    pass  # remove exchange courses
                 else:
                     credit.append(float(row["学分"]))
                     grade.append(float(row["总成绩"]))
